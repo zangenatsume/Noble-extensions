@@ -8,7 +8,7 @@ const mangayomiSources = [
     "iconUrl": "https://hivetoons.org/favicon.ico",
     "typeSource": "single",
     "isManga": true,
-    "version": "1.1.2",
+    "version": "1.1.3",
     "dateFormat": "",
     "dateFormatLocale": "",
     "pkgPath": "manga/src/en/hivetoons.js",
@@ -28,7 +28,7 @@ class DefaultExtension extends MProvider {
    */
   extractAstroIslandData(html, componentName) {
     try {
-      // Find component name in HTML (it's in the opts attribute)
+      // Find component name in opts attribute
       const searchStr = `&quot;name&quot;:&quot;${componentName}&quot;`;
       const nameIndex = html.indexOf(searchStr);
       
@@ -37,21 +37,23 @@ class DefaultExtension extends MProvider {
         return null;
       }
       
-      // Search backward from nameIndex to find props="
-      let propsStart = -1;
-      for (let i = nameIndex; i >= Math.max(0, nameIndex - 50000); i--) {
-        if (html.substring(i, i + 7) === 'props="') {
-          propsStart = i + 7;  // Start after 'props="'
-          break;
-        }
-      }
-      
-      if (propsStart === -1) {
-        console.log("No props found before component");
+      // Find the <astro-island tag that contains this component
+      let tagStart = html.lastIndexOf('<astro-island', nameIndex);
+      if (tagStart === -1) {
+        console.log("No astro-island tag found");
         return null;
       }
       
-      // Extract props value until closing quote
+      // Find props=" after the tag start
+      let propsStart = html.indexOf('props="', tagStart);
+      if (propsStart === -1 || propsStart > nameIndex) {
+        console.log("No props attribute found in this tag");
+        return null;
+      }
+      
+      propsStart += 7; // Skip 'props="'
+      
+      // Extract props value until closing quote (tracking bracket depth)
       let propsValue = '';
       let depth = 0;
       
@@ -82,7 +84,6 @@ class DefaultExtension extends MProvider {
       return this.decodeAstroProps(propsData);
     } catch (e) {
       console.log("Error extracting astro data: " + e.message);
-      console.log("Stack: " + e.stack);
       return null;
     }
   }
