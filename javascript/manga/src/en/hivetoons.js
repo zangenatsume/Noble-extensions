@@ -8,7 +8,7 @@ const mangayomiSources = [
     "iconUrl": "https://hivetoons.org/favicon.ico",
     "typeSource": "single",
     "isManga": true,
-    "version": "1.0.6",
+    "version": "1.0.7",
     "dateFormat": "",
     "dateFormatLocale": "",
     "pkgPath": "manga/src/en/hivetoons.js",
@@ -251,16 +251,17 @@ class DefaultExtension extends MProvider {
     const response = await client.get(url, this.getHeaders(url));
     const html = response.body;
     
-    const data = this.extractAstroIslandData(html, "SeriesIsland");
+    const data = this.extractAstroIslandData(html, "SeriesChaptersPanelIsland");
     
-    if (!data || !data.series) {
+    if (!data || !data.post) {
+      console.log("Could not extract series details - no data.post found");
       throw new Error("Could not extract series details");
     }
     
-    const series = data.series;
+    const series = data.post;
+    const chapterList = data.chapters || [];
     
     const chapters = [];
-    const chapterList = series.chapters || [];
     for (let i = 0; i < chapterList.length; i++) {
       const ch = chapterList[i];
       chapters.push({
@@ -288,6 +289,14 @@ class DefaultExtension extends MProvider {
     
     return {
       imageUrl: getStringValue(series.featuredImage),
+      name: getStringValue(series.postTitle || series.title || "Unknown"),
+      description: getStringValue(series.postContent || series.description || series.summary),
+      author: getStringValue(series.author || "Unknown"),
+      genre: genreStr,
+      status: this.mapStatus(series.seriesStatus),
+      chapters: chapters
+    };
+  }
       name: getStringValue(series.postTitle || series.title || "Unknown"),
       description: getStringValue(series.description || series.summary),
       author: getStringValue(series.author || "Unknown"),
