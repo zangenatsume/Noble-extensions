@@ -8,7 +8,7 @@ const mangayomiSources = [
     "iconUrl": "https://hivetoons.org/favicon.ico",
     "typeSource": "single",
     "isManga": true,
-    "version": "1.0.8",
+    "version": "1.0.9",
     "dateFormat": "",
     "dateFormatLocale": "",
     "pkgPath": "manga/src/en/hivetoons.js",
@@ -259,7 +259,7 @@ class DefaultExtension extends MProvider {
     }
     
     const series = data.post;
-    const chapterList = data.chapters || [];
+    const chapterList = data.initialChap || data.chapters || [];
     
     const chapters = [];
     for (let i = 0; i < chapterList.length; i++) {
