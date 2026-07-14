@@ -8,7 +8,7 @@ const mangayomiSources = [
     "iconUrl": "https://hivetoons.org/favicon.ico",
     "typeSource": "single",
     "isManga": true,
-    "version": "1.0.9",
+    "version": "1.1.0",
     "dateFormat": "",
     "dateFormatLocale": "",
     "pkgPath": "manga/src/en/hivetoons.js",
@@ -251,15 +251,25 @@ class DefaultExtension extends MProvider {
     const response = await client.get(url, this.getHeaders(url));
     const html = response.body;
     
+    console.log("getDetail: Fetching", url);
     const data = this.extractAstroIslandData(html, "SeriesChaptersPanelIsland");
     
-    if (!data || !data.post) {
-      console.log("Could not extract series details - no data.post found");
+    if (!data) {
+      console.log("getDetail: No data extracted from SeriesChaptersPanelIsland");
+      throw new Error("Could not extract series details");
+    }
+    
+    console.log("getDetail: Data keys:", Object.keys(data).join(", "));
+    
+    if (!data.post) {
+      console.log("getDetail: No data.post found");
       throw new Error("Could not extract series details");
     }
     
     const series = data.post;
     const chapterList = data.initialChap || data.chapters || [];
+    
+    console.log("getDetail: Found", chapterList.length, "chapters");
     
     const chapters = [];
     for (let i = 0; i < chapterList.length; i++) {
