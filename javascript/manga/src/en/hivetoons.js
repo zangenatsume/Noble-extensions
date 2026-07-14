@@ -8,7 +8,7 @@ const mangayomiSources = [
     "iconUrl": "https://hivetoons.org/favicon.ico",
     "typeSource": "single",
     "isManga": true,
-    "version": "1.0.2",
+    "version": "1.0.3",
     "dateFormat": "",
     "dateFormatLocale": "",
     "pkgPath": "manga/src/en/hivetoons.js",
@@ -104,24 +104,28 @@ class DefaultExtension extends MProvider {
     const data = this.extractAstroIslandData(html, "ArchivesPostListIsland");
     
     if (!data || !data.initialPosts) {
+      console.log("No data found in getPopular");
       return { list: [], hasNextPage: false };
     }
     
     const list = [];
-    for (let i = 0; i < data.initialPosts.length; i++) {
-      const item = data.initialPosts[i];
+    const posts = data.initialPosts;
+    for (let i = 0; i < posts.length; i++) {
+      const item = posts[i];
       list.push({
-        name: item.postTitle || item.title || "Unknown",
+        name: item.postTitle || "Unknown",
         imageUrl: item.featuredImage || "",
         link: `${this.source.baseUrl}/series/${item.slug}`
       });
     }
     
+    console.log("Found " + list.length + " manga");
+    
     const totalCount = data.initialTotalCount || 0;
     const itemsPerPage = data.itemsPerPage || 42;
     const hasNextPage = (page * itemsPerPage) < totalCount;
     
-    return { list, hasNextPage };
+    return { list: list, hasNextPage: hasNextPage };
   }
 
   /**
