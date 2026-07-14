@@ -8,7 +8,7 @@ const mangayomiSources = [
     "iconUrl": "https://hivetoons.org/favicon.ico",
     "typeSource": "single",
     "isManga": true,
-    "version": "1.0.7",
+    "version": "1.0.8",
     "dateFormat": "",
     "dateFormatLocale": "",
     "pkgPath": "manga/src/en/hivetoons.js",
@@ -291,14 +291,6 @@ class DefaultExtension extends MProvider {
       imageUrl: getStringValue(series.featuredImage),
       name: getStringValue(series.postTitle || series.title || "Unknown"),
       description: getStringValue(series.postContent || series.description || series.summary),
-      author: getStringValue(series.author || "Unknown"),
-      genre: genreStr,
-      status: this.mapStatus(series.seriesStatus),
-      chapters: chapters
-    };
-  }
-      name: getStringValue(series.postTitle || series.title || "Unknown"),
-      description: getStringValue(series.description || series.summary),
       author: getStringValue(series.author || "Unknown"),
       genre: genreStr,
       status: this.mapStatus(series.seriesStatus),
