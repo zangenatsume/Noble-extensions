@@ -8,7 +8,7 @@ const mangayomiSources = [
     "iconUrl": "https://hivetoons.org/favicon.ico",
     "typeSource": "single",
     "isManga": true,
-    "version": "1.1.1",
+    "version": "1.1.2",
     "dateFormat": "",
     "dateFormatLocale": "",
     "pkgPath": "manga/src/en/hivetoons.js",
@@ -28,82 +28,55 @@ class DefaultExtension extends MProvider {
    */
   extractAstroIslandData(html, componentName) {
     try {
-      // Find the line containing both opts with our component name
-      const optsPattern = `opts="\\{&quot;name&quot;:&quot;${componentName}&quot;`;
-      const optsMatch = html.match(new RegExp(optsPattern));
+      // Find component name in HTML (it's in the opts attribute)
+      const searchStr = `&quot;name&quot;:&quot;${componentName}&quot;`;
+      const nameIndex = html.indexOf(searchStr);
       
-      if (!optsMatch) {
-        console.log("No opts found for component: " + componentName);
+      if (nameIndex === -1) {
+        console.log("Component not found: " + componentName);
         return null;
       }
       
-      // Find the position and extract the full astro-island tag
-      const optsIndex = html.indexOf(optsMatch[0]);
-      const tagStart = html.lastIndexOf("<astro-island", optsIndex);
-      
-      if (tagStart === -1) {
-        console.log("Could not find astro-island start tag");
-        return null;
-      }
-      
-      // Find the closing > of the tag, being careful with quotes
-      let tagEnd = optsIndex;
-      let inQuotes = false;
-      let quoteChar = '';
-      
-      for (let i = optsIndex; i < html.length; i++) {
-        const char = html[i];
-        if ((char === '"' || char === "'") && html[i-1] !== '\\') {
-          if (!inQuotes) {
-            inQuotes = true;
-            quoteChar = char;
-          } else if (char === quoteChar) {
-            inQuotes = false;
-          }
-        }
-        if (char === '>' && !inQuotes) {
-          tagEnd = i;
+      // Search backward from nameIndex to find props="
+      let propsStart = -1;
+      for (let i = nameIndex; i >= Math.max(0, nameIndex - 50000); i--) {
+        if (html.substring(i, i + 7) === 'props="') {
+          propsStart = i + 7;  // Start after 'props="'
           break;
         }
       }
       
-      if (tagEnd === optsIndex) {
-        console.log("Could not find astro-island end tag");
-        return null;
-      }
-      
-      const fullTag = html.substring(tagStart, tagEnd + 1);
-      
-      // Extract props - find props=" and then find the matching closing "
-      const propsStart = fullTag.indexOf('props="');
       if (propsStart === -1) {
-        console.log("No props attribute found");
+        console.log("No props found before component");
         return null;
       }
       
-      // Start after props="
+      // Extract props value until closing quote
       let propsValue = '';
-      let start = propsStart + 7; // length of 'props="'
       let depth = 0;
       
-      for (let i = start; i < fullTag.length; i++) {
-        const char = fullTag[i];
+      for (let i = propsStart; i < html.length; i++) {
+        const char = html[i];
+        
+        // Stop at closing quote when not inside brackets
         if (char === '"' && depth === 0) {
           break;
         }
+        
         propsValue += char;
-        if (char === '{') depth++;
-        if (char === '}') depth--;
+        
+        if (char === '{' || char === '[') depth++;
+        if (char === '}' || char === ']') depth--;
       }
       
       // Decode HTML entities
       const propsJson = propsValue
         .replace(/&quot;/g, '"')
         .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
         .replace(/&#039;/g, "'")
-        .replace(/&#x27;/g, "'");
+        .replace(/&#x27;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>');
       
       const propsData = JSON.parse(propsJson);
       return this.decodeAstroProps(propsData);
