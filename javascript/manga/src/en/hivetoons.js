@@ -8,7 +8,7 @@ const mangayomiSources = [
     "iconUrl": "https://hivetoons.org/favicon.ico",
     "typeSource": "single",
     "isManga": true,
-    "version": "1.0.5",
+    "version": "1.0.6",
     "dateFormat": "",
     "dateFormatLocale": "",
     "pkgPath": "manga/src/en/hivetoons.js",
@@ -137,9 +137,11 @@ class DefaultExtension extends MProvider {
     const posts = data.initialPosts;
     for (let i = 0; i < posts.length; i++) {
       const item = posts[i];
+      const name = item.postTitle || "Unknown";
+      const imageUrl = item.featuredImage || "";
       list.push({
-        name: item.postTitle || "Unknown",
-        imageUrl: item.featuredImage || "",
+        name: typeof name === 'string' ? name : String(name),
+        imageUrl: typeof imageUrl === 'string' ? imageUrl : String(imageUrl),
         link: `${this.source.baseUrl}/series/${item.slug}`
       });
     }
@@ -171,9 +173,11 @@ class DefaultExtension extends MProvider {
     const list = [];
     for (let i = 0; i < data.initialPosts.length; i++) {
       const item = data.initialPosts[i];
+      const name = item.postTitle || item.title || "Unknown";
+      const imageUrl = item.featuredImage || "";
       list.push({
-        name: item.postTitle || item.title || "Unknown",
-        imageUrl: item.featuredImage || "",
+        name: typeof name === 'string' ? name : String(name),
+        imageUrl: typeof imageUrl === 'string' ? imageUrl : String(imageUrl),
         link: `${this.source.baseUrl}/series/${item.slug}`
       });
     }
@@ -223,9 +227,11 @@ class DefaultExtension extends MProvider {
     const list = [];
     for (let i = 0; i < data.initialPosts.length; i++) {
       const item = data.initialPosts[i];
+      const name = item.postTitle || item.title || "Unknown";
+      const imageUrl = item.featuredImage || "";
       list.push({
-        name: item.postTitle || item.title || "Unknown",
-        imageUrl: item.featuredImage || "",
+        name: typeof name === 'string' ? name : String(name),
+        imageUrl: typeof imageUrl === 'string' ? imageUrl : String(imageUrl),
         link: `${this.source.baseUrl}/series/${item.slug}`
       });
     }
@@ -273,11 +279,18 @@ class DefaultExtension extends MProvider {
       genreStr += genres[i].name;
     }
     
+    // Ensure all fields are strings, not arrays
+    const getStringValue = (val) => {
+      if (Array.isArray(val)) return val.join(", ");
+      if (val === null || val === undefined) return "";
+      return String(val);
+    };
+    
     return {
-      imageUrl: series.featuredImage || "",
-      name: series.postTitle || series.title || "Unknown",
-      description: series.description || series.summary || "",
-      author: series.author || "Unknown",
+      imageUrl: getStringValue(series.featuredImage),
+      name: getStringValue(series.postTitle || series.title || "Unknown"),
+      description: getStringValue(series.description || series.summary),
+      author: getStringValue(series.author || "Unknown"),
       genre: genreStr,
       status: this.mapStatus(series.seriesStatus),
       chapters: chapters
