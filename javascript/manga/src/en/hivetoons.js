@@ -8,7 +8,7 @@ const mangayomiSources = [
     "iconUrl": "https://hivetoons.org/favicon.ico",
     "typeSource": "single",
     "isManga": true,
-    "version": "1.0.3",
+    "version": "1.0.4",
     "dateFormat": "",
     "dateFormatLocale": "",
     "pkgPath": "manga/src/en/hivetoons.js",
@@ -28,10 +28,14 @@ class DefaultExtension extends MProvider {
    */
   extractAstroIslandData(html, componentName) {
     try {
-      const regex = new RegExp(`<astro-island[^>]*component-url="[^"]*${componentName}[^"]*"[^>]*props="([^"]*)"`, 'i');
+      // The component name is in opts, not component-url
+      const regex = new RegExp(`opts="\\{&quot;name&quot;:&quot;${componentName}&quot;[^"]*"[^>]*props="([^"]*)"`, 'i');
       const match = html.match(regex);
       
-      if (!match) return null;
+      if (!match) {
+        console.log("No match found for component: " + componentName);
+        return null;
+      }
       
       const propsEncoded = match[1];
       const propsJson = propsEncoded
