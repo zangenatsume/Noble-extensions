@@ -8,7 +8,7 @@ const mangayomiSources = [
     "iconUrl": "https://hivetoons.org/favicon.ico",
     "typeSource": "single",
     "isManga": true,
-    "version": "1.0.4",
+    "version": "1.0.5",
     "dateFormat": "",
     "dateFormatLocale": "",
     "pkgPath": "manga/src/en/hivetoons.js",
@@ -28,16 +28,37 @@ class DefaultExtension extends MProvider {
    */
   extractAstroIslandData(html, componentName) {
     try {
-      // The component name is in opts, not component-url
-      const regex = new RegExp(`opts="\\{&quot;name&quot;:&quot;${componentName}&quot;[^"]*"[^>]*props="([^"]*)"`, 'i');
-      const match = html.match(regex);
+      // Find the line containing both opts with our component name AND props
+      // The format is: <astro-island ... props="..." ... opts="{&quot;name&quot;:&quot;ComponentName&quot;...}" ...>
+      const optsMatch = html.match(new RegExp(`opts="\\{&quot;name&quot;:&quot;${componentName}&quot;[^"]*"`));
       
-      if (!match) {
-        console.log("No match found for component: " + componentName);
+      if (!optsMatch) {
+        console.log("No opts found for component: " + componentName);
         return null;
       }
       
-      const propsEncoded = match[1];
+      // Now find props in the same astro-island tag (search backwards from opts position)
+      const optsIndex = html.indexOf(optsMatch[0]);
+      // Find the start of this astro-island tag
+      const tagStart = html.lastIndexOf("<astro-island", optsIndex);
+      // Find the end of this astro-island tag
+      const tagEnd = html.indexOf(">", optsIndex);
+      
+      if (tagStart === -1 || tagEnd === -1) {
+        console.log("Could not find astro-island tag boundaries");
+        return null;
+      }
+      
+      const fullTag = html.substring(tagStart, tagEnd + 1);
+      
+      // Now extract props from this tag
+      const propsMatch = fullTag.match(/props="([^"]*)"/);
+      if (!propsMatch) {
+        console.log("No props attribute found in astro-island tag");
+        return null;
+      }
+      
+      const propsEncoded = propsMatch[1];
       const propsJson = propsEncoded
         .replace(/&quot;/g, '"')
         .replace(/&amp;/g, '&')
