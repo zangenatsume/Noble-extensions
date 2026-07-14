@@ -8,7 +8,7 @@ const mangayomiSources = [
     "iconUrl": "https://hivetoons.org/favicon.ico",
     "typeSource": "single",
     "isManga": true,
-    "version": "1.1.0",
+    "version": "1.1.1",
     "dateFormat": "",
     "dateFormatLocale": "",
     "pkgPath": "manga/src/en/hivetoons.js",
@@ -28,48 +28,88 @@ class DefaultExtension extends MProvider {
    */
   extractAstroIslandData(html, componentName) {
     try {
-      // Find the line containing both opts with our component name AND props
-      // The format is: <astro-island ... props="..." ... opts="{&quot;name&quot;:&quot;ComponentName&quot;...}" ...>
-      const optsMatch = html.match(new RegExp(`opts="\\{&quot;name&quot;:&quot;${componentName}&quot;[^"]*"`));
+      // Find the line containing both opts with our component name
+      const optsPattern = `opts="\\{&quot;name&quot;:&quot;${componentName}&quot;`;
+      const optsMatch = html.match(new RegExp(optsPattern));
       
       if (!optsMatch) {
         console.log("No opts found for component: " + componentName);
         return null;
       }
       
-      // Now find props in the same astro-island tag (search backwards from opts position)
+      // Find the position and extract the full astro-island tag
       const optsIndex = html.indexOf(optsMatch[0]);
-      // Find the start of this astro-island tag
       const tagStart = html.lastIndexOf("<astro-island", optsIndex);
-      // Find the end of this astro-island tag
-      const tagEnd = html.indexOf(">", optsIndex);
       
-      if (tagStart === -1 || tagEnd === -1) {
-        console.log("Could not find astro-island tag boundaries");
+      if (tagStart === -1) {
+        console.log("Could not find astro-island start tag");
+        return null;
+      }
+      
+      // Find the closing > of the tag, being careful with quotes
+      let tagEnd = optsIndex;
+      let inQuotes = false;
+      let quoteChar = '';
+      
+      for (let i = optsIndex; i < html.length; i++) {
+        const char = html[i];
+        if ((char === '"' || char === "'") && html[i-1] !== '\\') {
+          if (!inQuotes) {
+            inQuotes = true;
+            quoteChar = char;
+          } else if (char === quoteChar) {
+            inQuotes = false;
+          }
+        }
+        if (char === '>' && !inQuotes) {
+          tagEnd = i;
+          break;
+        }
+      }
+      
+      if (tagEnd === optsIndex) {
+        console.log("Could not find astro-island end tag");
         return null;
       }
       
       const fullTag = html.substring(tagStart, tagEnd + 1);
       
-      // Now extract props from this tag
-      const propsMatch = fullTag.match(/props="([^"]*)"/);
-      if (!propsMatch) {
-        console.log("No props attribute found in astro-island tag");
+      // Extract props - find props=" and then find the matching closing "
+      const propsStart = fullTag.indexOf('props="');
+      if (propsStart === -1) {
+        console.log("No props attribute found");
         return null;
       }
       
-      const propsEncoded = propsMatch[1];
-      const propsJson = propsEncoded
+      // Start after props="
+      let propsValue = '';
+      let start = propsStart + 7; // length of 'props="'
+      let depth = 0;
+      
+      for (let i = start; i < fullTag.length; i++) {
+        const char = fullTag[i];
+        if (char === '"' && depth === 0) {
+          break;
+        }
+        propsValue += char;
+        if (char === '{') depth++;
+        if (char === '}') depth--;
+      }
+      
+      // Decode HTML entities
+      const propsJson = propsValue
         .replace(/&quot;/g, '"')
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
-        .replace(/&#039;/g, "'");
+        .replace(/&#039;/g, "'")
+        .replace(/&#x27;/g, "'");
       
       const propsData = JSON.parse(propsJson);
       return this.decodeAstroProps(propsData);
     } catch (e) {
       console.log("Error extracting astro data: " + e.message);
+      console.log("Stack: " + e.stack);
       return null;
     }
   }
